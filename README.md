@@ -1,4 +1,4 @@
-# advisor
+# Astral
 
 A local, deterministic "dumb advisor" for LLM coding agents. It gives a model a
 compact, trustworthy view of a codebase — where symbols live, what conventions
