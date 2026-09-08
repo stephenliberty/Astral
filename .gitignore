@@ -1,0 +1,4 @@
+.advisor/
+*.tmp
+SPEC.md
+.idea
