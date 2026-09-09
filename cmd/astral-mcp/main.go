@@ -21,9 +21,33 @@ func toolPrefix() string {
 	return "astral_"
 }
 
-var mcpPrefix = toolPrefix()
+// naming selects convention v invented names. "simple" maps the tools to
+// conventional names models already know (find_symbol, find_references...).
+func naming() string {
+	return os.Getenv("ASTRAL_MCP_TOOL_NAMING")
+}
 
-func tool(name string) string { return mcpPrefix + name }
+var mcpPrefix = toolPrefix()
+var mcpName = naming()
+
+func tool(name string) string {
+	if mcpName == "simple" {
+		switch name {
+		case "locate":
+			name = "find_symbol"
+		case "callers":
+			name = "find_references"
+		case "module":
+			name = "module_info"
+		case "affected":
+			name = "affected_tests"
+		case "review":
+			name = "review_notes"
+		}
+		return name
+	}
+	return mcpPrefix + name
+}
 
 func main() {
 	root, err := os.Getwd()
