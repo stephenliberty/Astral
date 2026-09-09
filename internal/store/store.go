@@ -38,7 +38,7 @@ type Store struct {
 	root string
 }
 
-// New creates a store rooted at root (e.g. <project>/.advisor).
+// New creates a store rooted at root (e.g. <project>/.astral).
 func New(root string) *Store {
 	return &Store{root: root}
 }

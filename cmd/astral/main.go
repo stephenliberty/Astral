@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/stephen/advisor/internal/query"
-	"github.com/stephen/advisor/internal/watcher"
+	"astral/internal/query"
+	"astral/internal/watcher"
 )
 
 func main() {
@@ -18,9 +18,9 @@ func main() {
 	}
 
 	var rootCmd = &cobra.Command{
-		Use:   "advisor",
+		Use:   "astral",
 		Short: "a local, deterministic codebase advisor for LLMs",
-		Long: `advisor — a local, deterministic codebase advisor for LLMs.
+		Long: `astral — a local, deterministic codebase advisor for LLMs.
 
 It maintains a content-addressed index of symbols and human-authored
 conventions notes, so an LLM can answer "where do I write this" and
@@ -192,7 +192,7 @@ conventions notes, so an LLM can answer "where do I write this" and
 	rootCmd.AddCommand(initCmd, watchCmd, locateCmd, moduleCmd, noteCmd, reviewCmd, statusCmd, gcCmd, callersCmd, affectedCmd)
 
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, "advisor:", err)
+		fmt.Fprintln(os.Stderr, "astral:", err)
 		os.Exit(1)
 	}
 }

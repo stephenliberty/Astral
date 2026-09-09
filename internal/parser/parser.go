@@ -34,8 +34,10 @@ type FileData struct {
 
 // Import is a module this file imports from. Target is the module path as
 // written in source (e.g. "github.com/go-kit/kit/endpoint" or "./helper").
+// Symbols are the names bound by the import (JS/TS default/named imports).
 type Import struct {
-	Target string `json:"target"`
+	Target  string   `json:"target"`
+	Symbols []string `json:"symbols,omitempty"`
 }
 
 // Ref is a cross-package reference found in the file, like pkg.Sym or an
@@ -138,6 +140,19 @@ func extractImports(lang Language, root *tree_sitter.Node, content []byte) []Imp
 				} else {
 					target = n.Utf8Text(content)
 				}
+				// Capture the bound symbols from the import clause.
+				// The clause is a positional child (no field name).
+				for i := uint(0); i < n.NamedChildCount(); i++ {
+					c := n.NamedChild(i)
+					if c.Kind() == "import_clause" {
+						syms := importClauseSymbols(c, content)
+						if len(syms) > 0 {
+							out = append(out, Import{Target: strings.TrimSpace(target), Symbols: syms})
+							seen[strings.TrimSpace(target)] = true
+							return
+						}
+					}
+				}
 			} else if n.Kind() == "call_expression" {
 				// require("z")
 				if fn := n.ChildByFieldName("function"); fn != nil && fn.Utf8Text(content) == "require" {
@@ -156,14 +171,56 @@ func extractImports(lang Language, root *tree_sitter.Node, content []byte) []Imp
 	return out
 }
 
+// importClauseSymbols extracts the names bound by a JS/TS import clause.
+// Handles `x`, `{ a, b as c }`, `* as ns`, and `x, { a }`.
+func importClauseSymbols(clause *tree_sitter.Node, content []byte) []string {
+	var out []string
+	// Default import: first named child is an identifier (or a namespace).
+	for i := uint(0); i < clause.NamedChildCount(); i++ {
+		c := clause.NamedChild(i)
+		switch c.Kind() {
+		case "identifier":
+			out = append(out, c.Utf8Text(content))
+		case "namespace_import":
+			if name := c.ChildByFieldName("name"); name != nil {
+				out = append(out, name.Utf8Text(content))
+			}
+		case "named_imports":
+			for j := uint(0); j < c.NamedChildCount(); j++ {
+				spec := c.NamedChild(j)
+				if spec.Kind() == "import_specifier" {
+					// `b as c` binds the local name c (the alias field).
+					if alias := spec.ChildByFieldName("alias"); alias != nil {
+						out = append(out, alias.Utf8Text(content))
+					} else if name := spec.ChildByFieldName("name"); name != nil {
+						out = append(out, name.Utf8Text(content))
+					}
+				}
+			}
+		}
+	}
+	return out
+}
+
 // extractRefs finds cross-package references: pkg.Sym selector expressions
-// where pkg is a configured package alias, and dotted names in Python.
+// where pkg is a configured package alias, bare identifiers that resolve to
+// an imported symbol (default/named imports used directly), and dotted names
+// in Python.
 func extractRefs(lang Language, root *tree_sitter.Node, imports []Import, content []byte) []Ref {
 	// Track local aliases from imports: alias -> pkg.
 	aliases := map[string]string{}
+	// Track bare imported symbols: name -> pkg (for default/named imports
+	// used directly, e.g. `import transformMediaTypeObject from "./x.js"`).
+	importedSyms := map[string]string{}
 	for _, imp := range imports {
 		alias, pkg := splitImport(lang, imp.Target)
 		aliases[alias] = pkg
+		// For JS/TS, the import statement names the symbols it binds.
+		if lang == TypeScript || lang == JavaScript {
+			for _, sym := range imp.Symbols {
+				importedSyms[sym] = pkg
+			}
+		}
 	}
 
 	var out []Ref
@@ -192,6 +249,23 @@ func extractRefs(lang Language, root *tree_sitter.Node, imports []Import, conten
 					}
 				}
 			}
+			// Bare identifier that resolves to an imported symbol (default or
+			// named import used directly, e.g. `transformMediaTypeObject(...)`).
+			if n.Kind() == "identifier" {
+				name := n.Utf8Text(content)
+				if pkg, ok := importedSyms[name]; ok {
+					// Skip the import declaration itself and any definition
+					// sites (function/class/const with this name).
+					if isDefinitionSite(n) {
+						return
+					}
+					ref := Ref{Pkg: pkg, Sym: name}
+					if !seen[ref] {
+						seen[ref] = true
+						out = append(out, ref)
+					}
+				}
+			}
 		case Python:
 			if n.Kind() == "call" {
 				fn := n.ChildByFieldName("function")
@@ -215,6 +289,37 @@ func extractRefs(lang Language, root *tree_sitter.Node, imports []Import, conten
 		}
 	})
 	return out
+}
+
+// importedSymbols returns the symbol names bound by a JS/TS import statement.
+// Handles `import x from`, `import { a, b } from`, `import * as ns from`,
+// and `import x, { a } from`.
+
+// isDefinitionSite reports whether a node is a definition (function/class/
+// const/let/var/import binding) rather than a use of the identifier.
+func isDefinitionSite(n *tree_sitter.Node) bool {
+	p := n.Parent()
+	if p == nil {
+		return false
+	}
+	switch p.Kind() {
+	case "function_declaration", "class_declaration", "method_definition",
+		"import_specifier", "import_clause", "named_imports",
+		"variable_declarator", "formal_parameters", "required_parameter",
+		"optional_parameter", "type_annotation", "interface_declaration",
+		"type_alias_declaration", "property_signature", "method_signature",
+		"enum_declaration", "enum_member", "function_signature",
+		"call_signature", "construct_signature", "index_signature",
+		"type_parameter", "type_parameters", "property_declaration",
+		"parameter", "catch_clause", "class_heritage", "extends_clause",
+		"implements_clause", "type_arguments", "type_parameter_declaration":
+		return true
+	}
+	// A field named "name" is a definition site.
+	if p.ChildByFieldName("name") == n {
+		return true
+	}
+	return false
 }
 
 // splitImport returns the local alias and the module path. For Go, the alias

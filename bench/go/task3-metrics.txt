@@ -1,0 +1,1 @@
+In the metrics package, add a new implementation of the Counter interface called `NewMultiCounter(counters ...Counter) Counter` that fans out Add and With calls to all wrapped counters. Follow the existing patterns in the metrics package (look at how the multi package implements this). Place it in metrics/multi_counter.go. Do not modify any other files.

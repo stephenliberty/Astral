@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/stephen/advisor/internal/store"
+	"astral/internal/store"
 )
 
 // State is the lifecycle state of a note.

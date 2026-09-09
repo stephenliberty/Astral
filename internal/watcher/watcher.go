@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/stephen/advisor/internal/index"
-	"github.com/stephen/advisor/internal/parser"
+	"astral/internal/index"
+	"astral/internal/parser"
 )
 
 // Watch runs the fsnotify warm-up loop. It is an optimization, not a

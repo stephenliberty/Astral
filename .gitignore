@@ -1,4 +1,6 @@
-.advisor/
+.astral/
 *.tmp
 SPEC.md
 .idea
+bench-results.jsonl
+bench-out/

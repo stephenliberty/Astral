@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stephen/advisor/internal/index"
-	"github.com/stephen/advisor/internal/store"
+	"astral/internal/index"
+	"astral/internal/store"
 )
 
 // buildFixture writes a small multi-package repo and indexes it.

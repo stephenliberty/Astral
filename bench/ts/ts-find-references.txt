@@ -1,0 +1,1 @@
+Find every file in the repository that references the symbol `transformMediaTypeObject` — imports, direct calls, and re-exports. Report the complete list of file paths, one per line. Do not modify any files.

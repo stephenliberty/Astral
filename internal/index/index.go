@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/stephen/advisor/internal/parser"
-	"github.com/stephen/advisor/internal/store"
+	"astral/internal/parser"
+	"astral/internal/store"
 )
 
 // Indexer walks a project tree, parses supported files, and maintains the
@@ -21,7 +21,7 @@ type Indexer struct {
 // New creates an Indexer rooted at root.
 func New(root string) *Indexer {
 	return &Indexer{
-		store: store.New(filepath.Join(root, ".advisor")),
+		store: store.New(filepath.Join(root, ".astral")),
 		root:  root,
 	}
 }
@@ -279,7 +279,7 @@ func (ix *Indexer) recomputeDir(idx *store.Index, dir string) error {
 func shouldSkipDir(path string) bool {
 	base := filepath.Base(path)
 	switch base {
-	case ".git", ".advisor", "node_modules", "vendor", "dist", "build", ".venv", "venv", "__pycache__":
+	case ".git", ".astral", "node_modules", "vendor", "dist", "build", ".venv", "venv", "__pycache__":
 		return true
 	}
 	return false

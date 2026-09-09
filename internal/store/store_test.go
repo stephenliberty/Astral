@@ -22,7 +22,7 @@ func TestHashAndFingerprint(t *testing.T) {
 
 func TestStoreRoundTrip(t *testing.T) {
 	dir := t.TempDir()
-	s := New(filepath.Join(dir, ".advisor"))
+	s := New(filepath.Join(dir, ".astral"))
 
 	idx, err := s.LoadIndex()
 	if err != nil {
@@ -60,7 +60,7 @@ func TestStoreRoundTrip(t *testing.T) {
 
 func TestNoteRoundTrip(t *testing.T) {
 	dir := t.TempDir()
-	s := New(filepath.Join(dir, ".advisor"))
+	s := New(filepath.Join(dir, ".astral"))
 
 	type note struct{ Purpose string }
 	if err := s.PutNote("internal/parser", note{Purpose: "auth"}); err != nil {
@@ -88,7 +88,7 @@ func TestNoteRoundTrip(t *testing.T) {
 
 func TestGC(t *testing.T) {
 	dir := t.TempDir()
-	s := New(filepath.Join(dir, ".advisor"))
+	s := New(filepath.Join(dir, ".astral"))
 
 	idx, _ := s.LoadIndex()
 	idx.Files["a.py"] = &FileEntry{Path: "a.py", FileHash: "keep", IndexRef: "keep"}
@@ -104,10 +104,10 @@ func TestGC(t *testing.T) {
 	if err := s.GC(idx); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := os.Stat(filepath.Join(dir, ".advisor", "files", "orphan.json")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(dir, ".astral", "files", "orphan.json")); !os.IsNotExist(err) {
 		t.Error("orphan should be removed")
 	}
-	if _, err := os.Stat(filepath.Join(dir, ".advisor", "files", "keep.json")); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, ".astral", "files", "keep.json")); err != nil {
 		t.Error("referenced artifact should be kept")
 	}
 }

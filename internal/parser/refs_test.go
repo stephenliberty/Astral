@@ -103,3 +103,31 @@ r.Retry();
 	t.Logf("imports: %v", fd.Imports)
 	t.Logf("refs: %v", fd.Refs)
 }
+
+func TestExtractBareImportRefs(t *testing.T) {
+	src := []byte(`import transformMediaTypeObject from "./media-type-object.js";
+import { helper, other as renamed } from "./utils.js";
+
+function use() {
+  transformMediaTypeObject();
+  helper();
+  renamed();
+}
+`)
+	fd, err := Parse(TypeScript, "x.ts", src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("imports: %v", fd.Imports)
+	t.Logf("refs: %v", fd.Refs)
+	// The bare identifiers used as calls should be captured as refs.
+	found := map[string]bool{}
+	for _, r := range fd.Refs {
+		found[r.Sym] = true
+	}
+	for _, want := range []string{"transformMediaTypeObject", "helper", "renamed"} {
+		if !found[want] {
+			t.Errorf("expected ref for %s, got %v", want, fd.Refs)
+		}
+	}
+}

@@ -4,12 +4,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stephen/advisor/internal/store"
+	"astral/internal/store"
 )
 
 func newManager(t *testing.T) *Manager {
 	t.Helper()
-	s := store.New(filepath.Join(t.TempDir(), ".advisor"))
+	s := store.New(filepath.Join(t.TempDir(), ".astral"))
 	return New(s)
 }
 

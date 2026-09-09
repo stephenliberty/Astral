@@ -1,4 +1,4 @@
-module github.com/stephen/advisor
+module astral
 
 go 1.27.1
 

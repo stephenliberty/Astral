@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/stephen/advisor/internal/parser"
-	"github.com/stephen/advisor/internal/store"
+	"astral/internal/parser"
+	"astral/internal/store"
 )
 
 // Graph resolves cross-package references to source files and answers
@@ -21,7 +21,7 @@ type Graph struct {
 func New(root string) *Graph {
 	return &Graph{
 		root:  root,
-		store: store.New(filepath.Join(root, ".advisor")),
+		store: store.New(filepath.Join(root, ".astral")),
 	}
 }
 
@@ -40,11 +40,33 @@ func (g *Graph) fileData(idx *store.Index, path string) (*parser.FileData, bool)
 
 // resolvePkg maps a package/module reference to candidate source file paths
 // in the project. Go module paths (github.com/x/y/z) map to the last segment
-// matching a package dir; relative JS/TS paths map directly.
+// matching a package dir; relative JS/TS paths map directly (both directory
+// and file references, e.g. "./media-type-object.js").
 func (g *Graph) resolvePkg(idx *store.Index, pkg string) []string {
 	var out []string
 	pkg = strings.TrimPrefix(pkg, "./")
 	pkg = strings.TrimSuffix(pkg, "/")
+	// Relative file reference (JS/TS): "./media-type-object.js" -> the file.
+	if strings.HasSuffix(pkg, ".js") || strings.HasSuffix(pkg, ".ts") ||
+		strings.HasSuffix(pkg, ".jsx") || strings.HasSuffix(pkg, ".tsx") {
+		// Try the exact path, then with .ts/.tsx substituted for .js.
+		candidates := []string{pkg}
+		if strings.HasSuffix(pkg, ".js") {
+			base := strings.TrimSuffix(pkg, ".js")
+			candidates = append(candidates, base+".ts", base+".tsx", base+".mts", base+".cts")
+		}
+		for path := range idx.Files {
+			for _, c := range candidates {
+				if path == c {
+					out = append(out, path)
+				}
+			}
+		}
+		if len(out) > 0 {
+			sort.Strings(out)
+			return out
+		}
+	}
 	// Try exact dir matching first (pkg == dir path).
 	for path := range idx.Files {
 		dir := filepath.Dir(path)
@@ -125,7 +147,16 @@ func (g *Graph) CallersOfSymbol(idx *store.Index, name string) ([]Caller, error)
 			}
 			for _, r := range fd.Refs {
 				if r.Sym == name && r.Pkg != "" {
-					if matched := g.resolvePkg(idx, r.Pkg); matchesAny(matched, defPkg) {
+					// Relative refs ("./media-type-object.js") resolve against
+					// the caller's directory, not the repo root.
+					resolved := g.resolvePkg(idx, r.Pkg)
+					if strings.HasPrefix(r.Pkg, "./") || strings.HasPrefix(r.Pkg, "../") {
+						callerDir := filepath.Dir(path)
+						abs := filepath.Join(callerDir, r.Pkg)
+						abs = filepath.Clean(abs)
+						resolved = g.resolvePkg(idx, abs)
+					}
+					if matchesAny(resolved, defPkg) {
 						callers = append(callers, Caller{File: path, Sym: name, Pkg: r.Pkg})
 						break
 					}

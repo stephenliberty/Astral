@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/stephen/advisor/internal/graph"
-	"github.com/stephen/advisor/internal/index"
-	"github.com/stephen/advisor/internal/notes"
-	"github.com/stephen/advisor/internal/store"
+	"astral/internal/graph"
+	"astral/internal/index"
+	"astral/internal/notes"
+	"astral/internal/store"
 )
 
 // App wires the indexer and note manager for CLI commands.
