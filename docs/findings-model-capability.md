@@ -125,3 +125,36 @@ decision.** It greps whether astral is right or wrong, whether instructed
 gently or harshly, at 9b/27b/397b, in Claude Code or opencode. The astral fix
 is still valuable (callers now resolve bare-identifier imports), but it does
 not change the model's behavior.
+
+## Breakthrough: tool NAMING changes everything (2026-09-09)
+
+The `astral_*` tool names were actively hurting adoption. Renamed the MCP
+tools to conventional, self-describing names:
+
+| old | new |
+|---|---|
+| astral_locate | find_symbol |
+| astral_callers | find_references |
+| astral_module | module_info |
+| astral_affected | affected_tests |
+| astral_review | review_notes |
+
+**Result on local qwen3.5-9b, refactor task, opencode:**
+
+| naming | astral calls | grep calls | total calls | compiles |
+|---|---|---|---|---|
+| astral_* | 0–2 | heavy | 17–20 | ✅ |
+| **find_*** | **7** | **0** | 12 | ✅ |
+
+7 of 12 tool calls were astral tools, zero grep. The model used
+`find_references`/`find_symbol` for every lookup. This is the first time qwen
+has done this on the refactor task.
+
+**Conclusion: the tool name matters more than the model, the harness, or the
+instruction.** qwen3.5 was never incapable of using the tools — the `astral_*`
+names didn't read as search tools. Conventional names (`find_references`,
+`find_symbol`) are understood immediately. The earlier "qwen can't use tools"
+conclusion was wrong; the tool was named in a way qwen didn't recognize.
+
+Simple naming is now the default in `cmd/astral-mcp` (opt-out via
+`ASTRAL_MCP_TOOL_NAMING=astral`).

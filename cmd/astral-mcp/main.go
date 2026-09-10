@@ -21,10 +21,14 @@ func toolPrefix() string {
 	return "astral_"
 }
 
-// naming selects convention v invented names. "simple" maps the tools to
-// conventional names models already know (find_symbol, find_references...).
+// naming selects convention v invented names. Default "simple" maps the tools
+// to conventional names models already know (find_symbol, find_references...).
+// Set ASTRAL_MCP_TOOL_NAMING=astral to restore the astral_* names.
 func naming() string {
-	return os.Getenv("ASTRAL_MCP_TOOL_NAMING")
+	if n := os.Getenv("ASTRAL_MCP_TOOL_NAMING"); n != "" {
+		return n
+	}
+	return "simple"
 }
 
 var mcpPrefix = toolPrefix()

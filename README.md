@@ -53,8 +53,8 @@ cross-package relationship graph for blast-radius and test-impact queries.
 - **`affected`** — test impact analysis: which tests to run after editing a set
   of files, computed over the transitive import graph.
 - **MCP server** — the same queries exposed as MCP tools
-  (`astral_locate`, `astral_module`, `astral_review`, `astral_callers`,
-  `astral_affected`) so a model can call them directly.
+  (`find_symbol`, `module_info`, `review_notes`, `find_references`,
+  `affected_tests`) so a model can call them directly.
 - **Lazy freshness** — correctness never depends on a watcher; stale files are
   re-parsed on access. The optional `watch` daemon is a warm-up optimization.
 
@@ -124,8 +124,8 @@ astral-mcp
 ```
 
 Serves over stdio. Register it with your agent (e.g. Claude Code, Cursor,
-opencode) as an MCP server. The model can then call `astral_locate` before
-reading a file, `astral_callers` before a refactor, and `astral_affected`
+opencode) as an MCP server. The model can then call `find_symbol` before
+reading a file, `find_references` before a refactor, and `affected_tests`
 after an edit to know exactly which tests to run.
 
 ## Benchmarks
@@ -133,8 +133,8 @@ after an edit to know exactly which tests to run.
 Measured in a Claude Code harness driving a real model against the
 [go-kit](https://github.com/go-kit/kit) codebase, with and without astral's
 MCP tools available. Each task is a code-generation or refactor request; the
-"advisor" arm has `astral_locate`, `astral_module`, `astral_callers`, and
-`astral_affected` in its tool list. **Input tokens** are the ground-truth
+"advisor" arm has `find_symbol`, `module_info`, `find_references`, and
+`affected_tests` in its tool list. **Input tokens** are the ground-truth
 prompt tokens reported by the model backend, summed across all requests in
 the run. **Compiles** is how many of the runs produced a build-green package.
 
@@ -182,8 +182,8 @@ blocking the model from running `go build`, not an astral shortcoming.
   when its tool list is trimmed, and its variance can swamp the signal.
   Restricting the tool surface to a focused set
   (`Read,Edit,Write,Bash,astral_*`) makes it converge.
-- **The refactor task is the standout.** `astral_callers` (blast radius) and
-  `astral_affected` (test impact) convert a multi-file refactor from a
+- **The refactor task is the standout.** `find_references` (blast radius) and
+  `affected_tests` (test impact) convert a multi-file refactor from a
   grep-and-hope exercise into targeted, verified edits.
 - **Self-verification matters for correctness.** The agent must be able to run
   the build itself; when the harness blocked it from doing so, both arms

@@ -74,12 +74,21 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 req.add_header(k, v)
         try:
             resp = urllib.request.urlopen(req)
-            out = resp.read()
             self.send_response(resp.status)
             for k, v in resp.headers.items():
-                self.send_header(k, v)
+                if k.lower() not in ("content-length", "transfer-encoding"):
+                    self.send_header(k, v)
             self.end_headers()
-            self.wfile.write(out)
+            # Stream the body through so slow models don't time out the client.
+            while True:
+                chunk = resp.read(65536)
+                if not chunk:
+                    break
+                try:
+                    self.wfile.write(chunk)
+                    self.wfile.flush()
+                except (BrokenPipeError, ConnectionResetError):
+                    break
         except urllib.error.HTTPError as e:
             out = e.read()
             self.send_response(e.code)

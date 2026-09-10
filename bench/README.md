@@ -128,7 +128,7 @@ Each aggregate row contains:
 
 Compare `*-baseline` vs `*-advisor` for the same task. The refactor tasks
 (`task5` in Go, `ts-refactor` in TS) are the strongest signal because they
-exercise `astral_callers` (blast radius) and `astral_affected` (test impact).
+exercise `find_references` (blast radius) and `affected_tests` (test impact).
 
 ## Using the runner from opencode
 
